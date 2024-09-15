@@ -17,7 +17,7 @@ const Sidebar = ({ isOpen }) => {
       className={`bg-gray-800 text-white fixed top-0 left-0 h-full transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
     >
-      <div className="top-0 left-0 bottom-0 w-64 bg-gray-800 text-white overflow-y-auto">
+      <div className="top-0 left-0 bottom-0 w-64 text-white overflow-y-auto">
         <nav className="flex flex-col h-full">
           <div className="flex items-center px-4 py-3 border-b border-gray-700">
             <Link to="/" className="text-red-500 flex items-center text-lg p-2.5 font-semibold">
@@ -46,7 +46,7 @@ const Sidebar = ({ isOpen }) => {
             </NavLink>
             
             <Link
-              to="/admin/admin"
+              to="/admin/carr"
               className="flex items-center px-4 py-4 text-gray-400 hover:text-blue-500 bg-gray-900 border-l-4 border-gray-800 hover:border-blue-500"
             >
               <FaTh className="mr-2" /> DataFirst
@@ -58,12 +58,12 @@ const Sidebar = ({ isOpen }) => {
               <FaKeyboard className="mr-2" /> Forms
             </Link> */}
             <Link
-              to="/admin/admin2"
+              to="/admin/homeadmin"
               className="flex items-center px-4 py-4 text-gray-400 hover:text-blue-500 bg-gray-900 border-l-4 border-gray-800 hover:border-blue-500"
             >
               <FaTable className="mr-2" /> DataSecond
             </Link>
-            <Link
+            {/* <Link
               to="/admin/admin3"
               className="flex items-center px-4 py-4 text-gray-400 hover:text-blue-500 bg-gray-900 border-l-4 border-gray-800 hover:border-blue-500"
             >
@@ -86,7 +86,7 @@ const Sidebar = ({ isOpen }) => {
               className="flex items-center px-4 py-4 text-gray-400 hover:text-blue-500 bg-gray-900 border-l-4 border-gray-800 hover:border-blue-500"
             >
               <FaChartBar className="mr-2" /> Charts
-            </Link>
+            </Link> */}
             
           </div>
         </nav>

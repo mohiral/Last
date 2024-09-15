@@ -1,3 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+    background-color: black;
+  }
+  
+  /* @media (min-width: 768px) {
+    .h-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  
+    .max-w-lg {
+      margin: 0 auto;
+    }
+  } */
+
+  .custom-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .custom-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }

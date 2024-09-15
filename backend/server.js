@@ -1,337 +1,166 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Load environment variables from .env file
 dotenv.config();
 
+// Initialize Express app
 const app = express();
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json()); // Replaces body-parser
 
-// Connect to MongoDB using the URI from environment variables
+// Connect to MongoDB Atlas using environment variable
 mongoose.connect(process.env.MONGO_URI, {
-    // useNewUrlParser: true,
-    // useUnifiedTopology: true,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 })
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('Failed to connect to MongoDB', err));
+  .then(() => console.log('Connected to MongoDB Atlas'))
+  .catch(err => console.error('Failed to connect to MongoDB Atlas', err));
 
-// Define Schemas and Models
-const dataSchema = new mongoose.Schema({
-    time: String,
-    name: String,
-    result: String,
+// Define Car Schema and Model
+const carSchema = new mongoose.Schema({
+  name: String,
+  price: {
+    120: Number,
+    300: Number,
+    unlimited: Number,
+  },
+  kms: {
+    120: Number,
+    300: Number,
+  },
+  type: String,
+  fuel: String,
+  capacity: String,
+  imgUrl: String,
 });
 
-const Data = mongoose.model('Data', dataSchema);
+const Car = mongoose.model('Car', carSchema);
 
-const dataSchemaA = new mongoose.Schema({
-    time: String,
-    name: String,
-    result1: String,
-    result2: String,
+// Define Offer Schema and Model
+const offerSchema = new mongoose.Schema({
+  img: String,
+  title: String,
+  code: String,
+  description: String,
 });
 
-const DataA = mongoose.model('DataA', dataSchemaA);
+const Offer = mongoose.model('Offer', offerSchema);
 
-const dataThirdSchema = new mongoose.Schema({
-    name: String,
-    place: String,
+// Routes for Cars
+app.get('/cars', async (req, res) => {
+  try {
+    const cars = await Car.find();
+    res.status(200).json(cars);
+  } catch (error) {
+    console.error('Error fetching cars:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
 });
 
-const DataThird = mongoose.model('DataThird', dataThirdSchema);
-
-// Dynamic Table Model Creation
-const getTableModel = (tableName) => {
-    const tableSchema = new mongoose.Schema({
-        name: String,
-        today: String,
-        yesterday: String,
-    });
-
-    // Ensure the model is created or retrieved correctly
-    return mongoose.models[tableName] || mongoose.model(tableName, tableSchema, tableName);
-};
-
-// Get Table Names from MongoDB
-const getTableNames = async () => {
-    debugger
-    try {
-        const collections = await mongoose.connection.db.listCollections().toArray();
-        return collections.map(collection => collection.name);
-    } catch (error) {
-        console.error('Error fetching table names:', error);
-        throw new Error('Failed to fetch table names.');
-    }
-};
-
-// Validate Table Data Middleware
-const validateTableData = (req, res, next) => {
-    const { name, today, yesterday } = req.body;
-    if (!name || !today || !yesterday) {
-        return res.status(400).json({ message: 'Missing required fields' });
-    }
-    next();
-};
-
-// Routes for the Data model
-app.get('/getData', async (req, res) => {
-    try {
-        const data = await Data.find();
-        res.status(200).json(data);
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
+app.post('/cars', async (req, res) => {
+  try {
+    const newCar = new Car(req.body);
+    await newCar.save();
+    res.status(201).json(newCar);
+  } catch (error) {
+    console.error('Error adding car:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
 });
 
-app.post('/addData', async (req, res) => {
-    const { time, name, result } = req.body;
-    if (!time || !name || !result) {
-        return res.status(400).json({ message: 'Missing required fields' });
+app.put('/cars/:id', async (req, res) => {
+  try {
+    const updatedCar = await Car.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updatedCar) {
+      return res.status(404).json({ message: 'Car not found' });
     }
-    try {
-        const newData = new Data({ time, name, result });
-        await newData.save();
-        res.status(201).json(newData);
-    } catch (error) {
-        console.error('Error adding data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
+    res.status(200).json(updatedCar);
+  } catch (error) {
+    console.error('Error updating car:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
 });
 
-app.delete('/deleteData/:id', async (req, res) => {
-    try {
-        const result = await Data.findByIdAndDelete(req.params.id);
-        if (!result) {
-            return res.status(404).json({ message: 'Data not found' });
-        }
-        res.status(200).json({ message: 'Data deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+app.delete('/cars/:id', async (req, res) => {
+  try {
+    const deletedCar = await Car.findByIdAndDelete(req.params.id);
+    if (!deletedCar) {
+      return res.status(404).json({ message: 'Car not found' });
     }
+    res.status(200).json({ message: 'Car deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting car:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
 });
 
-app.put('/updateData/:id', async (req, res) => {
-    const { time, name, result } = req.body;
-    if (!time || !name || !result) {
-        return res.status(400).json({ message: 'Missing required fields' });
-    }
-    try {
-        const updatedData = await Data.findByIdAndUpdate(
-            req.params.id,
-            { time, name, result },
-            { new: true }
-        );
-        if (!updatedData) {
-            return res.status(404).json({ message: 'Data not found' });
-        }
-        res.status(200).json(updatedData);
-    } catch (error) {
-        console.error('Error updating data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
+// Routes for Offers
+app.get('/offers', async (req, res) => {
+  try {
+    const offers = await Offer.find();
+    res.status(200).json(offers);
+  } catch (error) {
+    console.error('Error fetching offers:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
 });
 
-// Routes for the DataThird model
-app.get('/getDataThird', async (req, res) => {
-    try {
-        const entries = await DataThird.find();
-        res.status(200).json(entries);
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
+app.post('/offers', async (req, res) => {
+  try {
+    const newOffer = new Offer(req.body);
+    await newOffer.save();
+    res.status(201).json(newOffer);
+  } catch (error) {
+    console.error('Error adding offer:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
 });
 
-app.post('/addDataThird', async (req, res) => {
-    const { name, place } = req.body;
-    if (!name || !place) {
-        return res.status(400).json({ message: 'Missing required fields' });
+app.put('/offers/:id', async (req, res) => {
+  try {
+    const updatedOffer = await Offer.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updatedOffer) {
+      return res.status(404).json({ message: 'Offer not found' });
     }
-    try {
-        const newEntry = new DataThird({ name, place });
-        await newEntry.save();
-        res.status(201).json(newEntry);
-    } catch (error) {
-        console.error('Error adding data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
+    res.status(200).json(updatedOffer);
+  } catch (error) {
+    console.error('Error updating offer:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
 });
 
-app.delete('/deleteDataThird/:id', async (req, res) => {
-    try {
-        const result = await DataThird.findByIdAndDelete(req.params.id);
-        if (!result) {
-            return res.status(404).json({ message: 'Data not found' });
-        }
-        res.status(200).json({ message: 'Data deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+app.delete('/offers/:id', async (req, res) => {
+  try {
+    const deletedOffer = await Offer.findByIdAndDelete(req.params.id);
+    if (!deletedOffer) {
+      return res.status(404).json({ message: 'Offer not found' });
     }
+    res.status(200).json({ message: 'Offer deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting offer:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
 });
 
-app.put('/updateDataThird/:id', async (req, res) => {
-    const { name, place } = req.body;
-    if (!name || !place) {
-        return res.status(400).json({ message: 'Missing required fields' });
-    }
-    try {
-        const updatedData = await DataThird.findByIdAndUpdate(
-            req.params.id,
-            { name, place },
-            { new: true }
-        );
-        if (!updatedData) {
-            return res.status(404).json({ message: 'Data not found' });
-        }
-        res.status(200).json(updatedData);
-    } catch (error) {
-        console.error('Error updating data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
-});
+// Serve static files from the 'dist' directory (for frontend)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, '../dist')));
 
-// Routes for the DataA model
-app.get('/getDataa', async (req, res) => {
-    try {
-        const data = await DataA.find();
-        res.status(200).json(data);
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
-});
-
-app.post('/addDataa', async (req, res) => {
-    try {
-        const { time, name, result1, result2 } = req.body;
-
-        if (!time || !name || !result1 || !result2) {
-            return res.status(400).json({ error: 'All fields are required' });
-        }
-
-        const newData = new DataA({ time, name, result1, result2 });
-        await newData.save();
-        res.status(201).json(newData);
-    } catch (error) {
-        console.error('Error saving data:', error.message); // Log the error message
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
-
-app.delete('/deleteDataa/:id', async (req, res) => {
-    try {
-        const result = await DataA.findByIdAndDelete(req.params.id);
-        if (!result) {
-            return res.status(404).json({ message: 'Data not found' });
-        }
-        res.status(200).json({ message: 'Data deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
-});
-
-app.put('/updateDataa/:id', async (req, res) => {
-    const { time, name, result1, result2 } = req.body;
-    if (!time || !name || !result1 || !result2) {
-        return res.status(400).json({ message: 'Missing required fields' });
-    }
-    try {
-        const updatedData = await DataA.findByIdAndUpdate(
-            req.params.id,
-            { time, name, result1, result2 },
-            { new: true }
-        );
-        if (!updatedData) {
-            return res.status(404).json({ message: 'Data not found' });
-        }
-        res.status(200).json(updatedData);
-    } catch (error) {
-        console.error('Error updating data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
-});
-
-// Routes for dynamic tables
-app.post('/addTableData', async (req, res) => {
-    const { tableName, name, today, yesterday } = req.body;
-    try {
-        const Table = getTableModel(tableName);
-        const newData = new Table({ name, today, yesterday });
-        await newData.save();
-        res.status(201).json(newData);
-    } catch (error) {
-        console.error('Error adding table data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
-});
-
-app.get('/getTableNames', async (req, res) => {
-    try {
-        const tableNames = await getTableNames();
-        res.json(tableNames);
-    } catch (error) {
-        console.error('Error fetching table names:', error);
-        res.status(500).json({ error: 'Failed to fetch table names.' });
-    }
-});
-
-app.get('/getTableData/:tableName', async (req, res) => {
-    const tableName = req.params.tableName;
-    try {
-        const Table = getTableModel(tableName);
-        const data = await Table.find();
-        res.status(200).json(data);
-    } catch (error) {
-        console.error('Error fetching table data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
-});
-
-app.put('/updateTableData/:tableName/:id', validateTableData, async (req, res) => {
-    const { tableName, id } = req.params;
-    const { name, today, yesterday } = req.body;
-    try {
-        const Table = getTableModel(tableName);
-        const updatedData = await Table.findByIdAndUpdate(
-            id,
-            { name, today, yesterday },
-            { new: true }
-        );
-        if (!updatedData) {
-            return res.status(404).json({ message: 'Data not found' });
-        }
-        res.status(200).json(updatedData);
-    } catch (error) {
-        console.error('Error updating table data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
-});
-
-app.delete('/deleteTableData/:tableName/:id', async (req, res) => {
-    const { tableName, id } = req.params;
-    try {
-        const Table = getTableModel(tableName);
-        const result = await Table.findByIdAndDelete(id);
-        if (!result) {
-            return res.status(404).json({ message: 'Data not found' });
-        }
-        res.status(200).json({ message: 'Data deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting table data:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
+// Serve index.html for all routes (for client-side routing)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 // Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});

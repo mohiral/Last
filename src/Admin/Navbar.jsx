@@ -20,7 +20,7 @@ const Navbar = ({ isSidebarOpen, toggleSidebar }) => {
       </button>
       {!isSidebarOpen && (
         <Link to="/" className="text-red-500 flex items-center text-lg font-semibold ml-4">
-          <FaUserEdit className="mr-2" /> DarkPan
+          <FaUserEdit className="mr-2" /> AL Official Group
         </Link>
       )}
       {/* <form className={`hidden md:flex items-center ml-4 ${isSidebarOpen ? 'ml-0' : 'ml-4'}`}>
